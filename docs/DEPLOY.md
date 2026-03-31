@@ -40,7 +40,7 @@ Vercel Dashboard > Project Settings > Environment Variables'a gidin ve asagidaki
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | *(Supabase anon key — tam 208 karakter, 3 JWT segmenti)* | Production, Preview, Development |
 | `SUPABASE_SERVICE_ROLE_KEY` | *(Supabase service role key)* | Production, Preview, Development |
 | `NEXT_PUBLIC_SITE_URL` | `https://yisa-s.com` | Production |
-| `NEXT_PUBLIC_APP_API_URL` | `https://app.yisa-s.com/api` | Production |
+| `NEXT_PUBLIC_APP_API_URL` | `https://app.yisa-s.com` | Production |
 
 ### yisa-s-patron
 
@@ -74,7 +74,7 @@ Vercel Dashboard > Project Settings > Environment Variables'a gidin ve asagidaki
 | `NEXT_PUBLIC_APP_URL` | `https://app.yisa-s.com` | Production |
 | `NEXT_PUBLIC_SITE_URL` | `https://yisa-s.com` | Production |
 | `NEXT_PUBLIC_ROOT_DOMAIN` | `yisa-s.com` | Production |
-| `NEXT_PUBLIC_APP_YISA_S_API_URL` | `https://app.yisa-s.com/api` | Production |
+| `NEXT_PUBLIC_APP_YISA_S_API_URL` | `https://app.yisa-s.com` | Production |
 | `NEXT_PUBLIC_PATRON_EMAIL` | `serdincaltay@gmail.com` | Production |
 | `CRON_SECRET` | *(rastgele uzun string)* | Production |
 | `STRIPE_SECRET_KEY` | *(opsiyonel — odeme icin)* | Production |
