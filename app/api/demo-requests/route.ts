@@ -74,8 +74,12 @@ export async function POST(request: Request) {
     await rateLimitByEmail(email, 3, 24 * 60 * 60 * 1000)
 
     // Supabase service role client ile INSERT (anonim erişim için)
-    // Not: Service role key ile anonim erişim sağlanır
-    const supabase = await createClient()
+    // Not: Anonim kullanıcılar RLS'den geçemez, service role gerekir
+    const supabase = createAdminClient()
+
+    // athlete_count kolonu henüz DB'de yok — notlara ekle
+    const athleteNote = athlete_count ? `Sporcu sayısı: ~${athlete_count}` : ""
+    const combinedNotes = [structuredNotes, athleteNote].filter(Boolean).join(". ") || null
 
     const { data, error } = await supabase
       .from("demo_requests")
@@ -85,8 +89,7 @@ export async function POST(request: Request) {
         phone: cleanPhone,
         facility_type: facility_type || null,
         city,
-        athlete_count,
-        notes: structuredNotes || null,
+        notes: combinedNotes,
         source: source || "www",
         status: "new",
       })
