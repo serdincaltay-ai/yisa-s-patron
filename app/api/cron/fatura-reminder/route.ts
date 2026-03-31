@@ -54,12 +54,6 @@ export async function GET(request: Request) {
     }
   }
 
-  const authHeader = request.headers.get("authorization")
-  const cronSecret = process.env.CRON_SECRET
-  if (!patronOk && cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
   try {
     const supabase = createAdminClient()
     const now = new Date()
@@ -131,12 +125,6 @@ export async function POST(request: Request) {
     if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-  }
-
-  const authHeader = request.headers.get("authorization")
-  const cronSecret = process.env.CRON_SECRET
-  if (!patronOk && cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   let body: { phone?: string; dryRun?: boolean } = {}
