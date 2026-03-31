@@ -180,7 +180,7 @@ export async function POST(
       .insert({
         user_id: demoUserId,
         tenant_id: tenantId,
-        role: "franchise_sahibi",
+        role: "owner",
       })
 
     if (utError) {
