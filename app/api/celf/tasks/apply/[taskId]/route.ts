@@ -4,6 +4,8 @@ import { requirePatron } from "@/lib/celf/patron-auth"
 
 const FORBIDDEN_SQL = /\b(DROP|ALTER|TRUNCATE|DELETE|CREATE\s+TABLE)\b/i
 
+const ALLOWED_JSON_TABLES = new Set(["celf_outputs", "celf_results", "celf_logs"])
+
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ taskId: string }> }
@@ -51,6 +53,10 @@ export async function POST(
       }
     } else if (outputType === "json") {
       const tableName = (outputResult.tableName as string) || "celf_outputs"
+      if (!ALLOWED_JSON_TABLES.has(tableName)) {
+        await supabase.from("celf_tasks").update({ apply_status: "failed", updated_at: new Date().toISOString() }).eq("id", taskId)
+        return NextResponse.json({ applied: false, output_type: "json", details: `Guvenlik: Tablo izin listesinde degil: ${tableName}` })
+      }
       const payload = outputResult.json ?? outputResult
       if (payload && typeof payload === "object" && !Array.isArray(payload)) {
         const { error: insertErr } = await supabase.from(tableName).insert(payload as Record<string, unknown>)
