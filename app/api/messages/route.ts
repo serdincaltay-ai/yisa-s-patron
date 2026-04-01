@@ -1,7 +1,13 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
+import { requirePatron } from "@/lib/celf/patron-auth"
 
 export async function GET(request: Request) {
+  const patronOk = await requirePatron()
+  if (!patronOk) {
+    return NextResponse.json({ error: "Patron girisi gerekli" }, { status: 401 })
+  }
+
   const { searchParams } = new URL(request.url)
   const section = searchParams.get("section") || "genel"
 
@@ -17,6 +23,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const patronOk = await requirePatron()
+  if (!patronOk) {
+    return NextResponse.json({ error: "Patron girisi gerekli" }, { status: 401 })
+  }
+
   const body = await request.json()
   const { section, member_id, text, msg_type } = body
 

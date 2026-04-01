@@ -1,6 +1,7 @@
 import { generateText } from "ai"
 import { NextResponse } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { requirePatron } from "@/lib/celf/patron-auth"
 
 const MEMBER_MODELS: Record<string, string> = {
   claude: "anthropic/claude-sonnet-4-20250514",
@@ -157,6 +158,11 @@ ${ORTAK_KURAL}`,
 }
 
 export async function POST(request: Request) {
+  const patronOk = await requirePatron()
+  if (!patronOk) {
+    return NextResponse.json({ error: "Patron girisi gerekli" }, { status: 401 })
+  }
+
   try {
     const { memberId, message, section, mode, context } = await request.json()
 

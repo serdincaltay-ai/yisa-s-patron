@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { requirePatron } from "@/lib/celf/patron-auth"
 
 // API tipleri
 type ApiType = "AI" | "Platform" | "DB"
@@ -69,6 +70,11 @@ async function timedFetch(
 }
 
 export async function GET() {
+  const patronOk = await requirePatron()
+  if (!patronOk) {
+    return NextResponse.json({ error: "Patron girisi gerekli" }, { status: 401 })
+  }
+
   const now = new Date().toISOString()
 
   // API tanimlari

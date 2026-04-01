@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { DollarSign, Building2, LayoutTemplate, BookOpen, Store, Bot, ImageIcon } from "lucide-react"
+import { DollarSign, Building2, LayoutTemplate, BookOpen, Store, Bot, ImageIcon, Terminal, ClipboardList, Globe } from "lucide-react"
 import dynamic from "next/dynamic"
 
 const DIRECTORATES = [
@@ -91,6 +91,33 @@ export default function PatronSidebarLeft() {
             >
               <Store className="w-4 h-4 text-[#f472b6]" />
               COO Magazasi
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/patron/onay-kuyrugu"
+              className="flex items-center gap-2 text-sm text-[#e2e8f0]/90 py-1.5 px-2 rounded-md hover:bg-[#0f3460]/30 font-mono transition-colors"
+            >
+              <ClipboardList className="w-4 h-4 text-[#f97316]" />
+              Onay Kuyrugu
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/patron/celf"
+              className="flex items-center gap-2 text-sm text-[#e2e8f0]/90 py-1.5 px-2 rounded-md hover:bg-[#0f3460]/30 font-mono transition-colors"
+            >
+              <Terminal className="w-4 h-4 text-[#a855f7]" />
+              CELF Motor
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/patron/vitrin-yonetimi"
+              className="flex items-center gap-2 text-sm text-[#e2e8f0]/90 py-1.5 px-2 rounded-md hover:bg-[#0f3460]/30 font-mono transition-colors"
+            >
+              <Globe className="w-4 h-4 text-[#06b6d4]" />
+              Vitrin Slotlari
             </Link>
           </li>
           <li>

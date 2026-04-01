@@ -27,9 +27,9 @@ import {
 const ROLE_INFO = [
   { role: "patron", label: "Patron", icon: Shield, color: "text-indigo-400", path: "/dashboard" },
   { role: "franchise_sahibi", label: "Franchise Sahibi", icon: Building2, color: "text-cyan-400", path: "/franchise" },
-  { role: "mudur", label: "M\u00fcd\u00fcr", icon: Briefcase, color: "text-amber-400", path: "/mudur" },
-  { role: "admin", label: "Y\u00f6netici", icon: UserCog, color: "text-purple-400", path: "/franchise" },
-  { role: "antrenor", label: "Antren\u00f6r", icon: Dumbbell, color: "text-emerald-400", path: "/antrenor" },
+  { role: "mudur", label: "Müdür", icon: Briefcase, color: "text-amber-400", path: "/mudur" },
+  { role: "admin", label: "Yönetici", icon: UserCog, color: "text-purple-400", path: "/franchise" },
+  { role: "antrenor", label: "Antrenör", icon: Dumbbell, color: "text-emerald-400", path: "/antrenor" },
   { role: "kasa", label: "Kasa Sorumlusu", icon: Wallet, color: "text-pink-400", path: "/franchise" },
   { role: "veli", label: "Veli", icon: Users, color: "text-orange-400", path: "/veli" },
 ]
@@ -125,7 +125,7 @@ export default function LoginPage() {
         setRemainingAttempts(newRemaining)
         setError(
           authError.message === "Invalid login credentials"
-            ? `E-posta veya \u015fifre hatal\u0131.${newRemaining <= 2 ? ` (${newRemaining} deneme hakkiniz kaldi)` : ""}`
+            ? `E-posta veya şifre hatalı.${newRemaining <= 2 ? ` (${newRemaining} deneme hakkınız kaldı)` : ""}`
             : authError.message
         )
         setLoading(false)
@@ -183,7 +183,7 @@ export default function LoginPage() {
       // Patron olmayan roller — dogrudan yonlendir
       await completeLogin(roleData)
     } catch {
-      setError("Ba\u011flant\u0131 hatas\u0131. L\u00fctfen tekrar deneyin.")
+      setError("Bağlantı hatası. Lütfen tekrar deneyin.")
       setLoading(false)
     }
   }
@@ -251,7 +251,7 @@ export default function LoginPage() {
       const info = ROLE_INFO.find((r) => r.role === roleData.role)
       router.push(info?.path ?? "/dashboard")
     } else {
-      setError("Hesab\u0131n\u0131za rol atanmam\u0131\u015f. Y\u00f6neticiyle ileti\u015fime ge\u00e7in.")
+      setError("Hesabınıza rol atanmamış. Yöneticiyle iletişime geçin.")
       setLoading(false)
     }
   }
@@ -272,7 +272,7 @@ export default function LoginPage() {
             YiSA-S
           </h1>
           <p className="text-sm text-zinc-500 mt-1 font-mono">
-            Ak\u0131ll\u0131 Y\u00f6netim Platformu
+            Akıllı Yönetim Platformu
           </p>
         </div>
 
@@ -284,7 +284,7 @@ export default function LoginPage() {
               <div className="flex items-center gap-2 mb-6">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-xs font-bold tracking-widest text-indigo-400 uppercase font-mono">
-                  G\u00fcvenli Giri\u015f
+                  Güvenli Giriş
                 </span>
               </div>
 
@@ -305,14 +305,14 @@ export default function LoginPage() {
 
                 <div>
                   <label className="text-xs text-zinc-400 uppercase tracking-wider block mb-2 font-mono">
-                    \u015eifre
+                    Şifre
                   </label>
                   <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="\u015eifrenizi girin..."
+                      placeholder="Şifrenizi girin..."
                       className="w-full bg-[#060a13] border border-[#2a3650] rounded-lg px-4 py-3 pr-10 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-indigo-500/40 transition-colors font-mono"
                     />
                     <button
@@ -345,10 +345,10 @@ export default function LoginPage() {
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Dogrulan\u0131yor...
+                      Doğrulanıyor...
                     </>
                   ) : (
-                    "G\u0130R\u0130\u015e YAP"
+                    "GİRİŞ YAP"
                   )}
                 </button>
               </form>
