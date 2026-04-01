@@ -1,0 +1,26 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - devin/1774923847-faz1-iskelet
+
+jobs:
+  deploy:
+    name: Deploy to Production Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            cd ${{ secrets.SERVER_PATH_PATRON }}
+            git pull origin devin/1774923847-faz1-iskelet
+            npm install --legacy-peer-deps
+            npm run build
+            pm2 restart yisa-s-patron || pm2 start npm --name "yisa-s-patron" -- start
