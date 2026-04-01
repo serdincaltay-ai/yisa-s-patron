@@ -1,5 +1,5 @@
 import React from "react"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
@@ -11,12 +11,20 @@ export const metadata: Metadata = {
   title: "YİSA-S Patron Paneli | Robot Orkestrasyon Sistemi",
   description: "YİSA-S Akıllı Yönetim Paneli - Beyin Takımı, Canlı Mimari, AI Orkestrasyon",
   manifest: "/manifest.json",
-  themeColor: "#818cf8",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "YİSA-S Patron",
   },
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#818cf8",
 }
 
 export default function RootLayout({
@@ -27,7 +35,6 @@ export default function RootLayout({
   return (
     <html lang="tr" className="dark">
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
