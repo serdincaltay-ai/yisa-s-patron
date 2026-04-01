@@ -25,7 +25,7 @@ import {
    ================================================================ */
 
 const ROLE_INFO = [
-  { role: "patron", label: "Patron", icon: Shield, color: "text-indigo-400", path: "/dashboard" },
+  { role: "patron", label: "Patron", icon: Shield, color: "text-indigo-400", path: "/patron/dashboard" },
   { role: "franchise_sahibi", label: "Franchise Sahibi", icon: Building2, color: "text-cyan-400", path: "/franchise" },
   { role: "mudur", label: "Müdür", icon: Briefcase, color: "text-amber-400", path: "/mudur" },
   { role: "admin", label: "Yönetici", icon: UserCog, color: "text-purple-400", path: "/franchise" },
@@ -249,7 +249,7 @@ export default function LoginPage() {
         }
       }
       const info = ROLE_INFO.find((r) => r.role === roleData.role)
-      router.push(info?.path ?? "/dashboard")
+      router.push(info?.path ?? "/patron/dashboard")
     } else {
       setError("Hesabınıza rol atanmamış. Yöneticiyle iletişime geçin.")
       setLoading(false)
