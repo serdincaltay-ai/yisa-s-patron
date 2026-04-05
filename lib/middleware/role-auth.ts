@@ -29,9 +29,11 @@ import type { UserRole } from "@/lib/types"
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
   patron: 100,
   mudur: 90,
+  tenant_owner: 80,
   franchise_sahibi: 80,
   admin: 70,
   kasa: 50,
+  coach: 40,
   antrenor: 40,
   veli: 10,
 }
@@ -52,6 +54,19 @@ export const ROLE_ACCESS_MAP: Record<UserRole, string[]> = {
     "/personel",
     "/sozlesme",
     "/api",
+  ],
+  tenant_owner: [
+    "/franchise",
+    "/tesis",
+    "/antrenor",
+    "/panel",
+    "/magaza",
+    "/personel",
+    "/sozlesme",
+    "/api/franchise",
+    "/api/social",
+    "/api/child-development",
+    "/api/tenants",
   ],
   franchise_sahibi: [
     "/franchise",
@@ -90,6 +105,14 @@ export const ROLE_ACCESS_MAP: Record<UserRole, string[]> = {
     "/api/franchise/payments",
     "/api/expenses",
   ],
+  coach: [
+    "/antrenor",
+    "/tesis",
+    "/api/franchise/athletes",
+    "/api/franchise/attendance",
+    "/api/franchise/schedule",
+    "/api/child-development",
+  ],
   antrenor: [
     "/antrenor",
     "/tesis",
@@ -108,9 +131,11 @@ export const ROLE_ACCESS_MAP: Record<UserRole, string[]> = {
 export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   patron: "Patron",
   mudur: "Müdür",
+  tenant_owner: "Tesis Sahibi",
   franchise_sahibi: "Franchise Sahibi",
   admin: "Yönetici",
   kasa: "Kasa Sorumlusu",
+  coach: "Antrenör",
   antrenor: "Antrenör",
   veli: "Veli",
 }

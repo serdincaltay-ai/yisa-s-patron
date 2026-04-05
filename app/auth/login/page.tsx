@@ -26,9 +26,11 @@ import {
 
 const ROLE_INFO = [
   { role: "patron", label: "Patron", icon: Shield, color: "text-indigo-400", path: "/patron/dashboard" },
+  { role: "tenant_owner", label: "Tesis Sahibi", icon: Building2, color: "text-cyan-400", path: "/franchise" },
   { role: "franchise_sahibi", label: "Franchise Sahibi", icon: Building2, color: "text-cyan-400", path: "/franchise" },
   { role: "mudur", label: "Müdür", icon: Briefcase, color: "text-amber-400", path: "/mudur" },
   { role: "admin", label: "Yönetici", icon: UserCog, color: "text-purple-400", path: "/franchise" },
+  { role: "coach", label: "Antrenör", icon: Dumbbell, color: "text-emerald-400", path: "/antrenor" },
   { role: "antrenor", label: "Antrenör", icon: Dumbbell, color: "text-emerald-400", path: "/antrenor" },
   { role: "kasa", label: "Kasa Sorumlusu", icon: Wallet, color: "text-pink-400", path: "/franchise" },
   { role: "veli", label: "Veli", icon: Users, color: "text-orange-400", path: "/veli" },

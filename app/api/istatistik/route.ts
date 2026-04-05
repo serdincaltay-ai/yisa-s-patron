@@ -36,7 +36,6 @@ export async function GET(request: Request) {
     // Paralel sorgular
     const [
       athletesResult,
-      studentsResult,
       staffResult,
       paymentsResult,
       attendanceResult,
@@ -46,8 +45,6 @@ export async function GET(request: Request) {
     ] = await Promise.all([
       // Toplam uye (athletes)
       supabase.from("athletes").select("id, tenant_id, created_at", { count: "exact" }),
-      // Legacy kurulumlarda uye verisi students tablosunda olabilir
-      supabase.from("students").select("id, tenant_id, created_at", { count: "exact" }),
       // Aktif antrenor (staff)
       supabase.from("staff").select("id, role, tenant_id", { count: "exact" }),
       // Odemeler (payments) — donem icinde
@@ -62,7 +59,7 @@ export async function GET(request: Request) {
       supabase.from("sports_branches").select("id, name"),
     ])
 
-    const totalAthletes = Math.max(athletesResult.count ?? 0, studentsResult.count ?? 0)
+    const totalAthletes = athletesResult.count ?? 0
     const totalStaff = staffResult.count ?? 0
     const totalDemoRequests = demoResult.count ?? 0
     const totalRobotTasks = robotTasksResult.count ?? 0

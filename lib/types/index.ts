@@ -58,7 +58,7 @@ export interface UserTenant {
   created_at?: string
 }
 
-export type UserRole = "patron" | "franchise_sahibi" | "mudur" | "antrenor" | "veli" | "admin" | "kasa"
+export type UserRole = "patron" | "tenant_owner" | "franchise_sahibi" | "mudur" | "coach" | "antrenor" | "veli" | "admin" | "kasa"
 
 // ==================== STUDENT ====================
 export interface Student {
