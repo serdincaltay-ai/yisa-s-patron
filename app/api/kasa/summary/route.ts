@@ -98,10 +98,19 @@ export async function GET() {
       tenantGelir[tid].total += Number(p.amount) || 0
     }
 
+    const isActivationPayment = (description: string | null | undefined) => {
+      const text = String(description ?? "").toLowerCase()
+      return text.includes("aktivasyon") || text.includes("activation")
+    }
+
     // Demo ucretleri vs abonelik (description'a gore tahmini ayrim)
     const demoGelirleri = paidPayments
       .filter((p) => (p.description ?? "").toLowerCase().includes("demo"))
       .reduce((s, p) => s + (Number(p.amount) || 0), 0)
+
+    const aktivasyonOdemeKayitlari = paidPayments.filter((p) => isActivationPayment(p.description))
+    const aktivasyonGeliriUsd = aktivasyonOdemeKayitlari.reduce((s, p) => s + (Number(p.amount) || 0), 0)
+    const aktivasyonKayitAdedi = aktivasyonOdemeKayitlari.length
     const abonelikGelirleri = totalGelir - demoGelirleri
 
     // --- Gider detaylari ---
@@ -184,11 +193,51 @@ export async function GET() {
       })
     }
 
+    // --- Son 6 ay aylik finans raporu ---
+    const monthlyReport: Array<{
+      month: string
+      label: string
+      gelir: number
+      gider: number
+      net: number
+      aktivasyonUsd: number
+      aktivasyonAdet: number
+    }> = []
+
+    for (let i = 5; i >= 0; i--) {
+      const ref = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1))
+      const monthKey = ref.toISOString().slice(0, 7)
+      const monthLabel = ref.toLocaleDateString("tr-TR", { month: "short", year: "numeric" })
+
+      const monthPaidPayments = paidPayments.filter((p) => (p.created_at ?? "").slice(0, 7) === monthKey)
+      const monthGelir = monthPaidPayments.reduce((s, p) => s + (Number(p.amount) || 0), 0)
+      const monthGider = giderItems
+        .filter((e) => (e.expense_date ?? "").slice(0, 7) === monthKey)
+        .reduce((s, e) => s + (Number(e.amount) || 0), 0)
+      const monthTokenCost = tokenRows
+        .filter((r) => (r.created_at ?? "").slice(0, 7) === monthKey)
+        .reduce((s, r) => s + (Number(r.cost_usd) || 0), 0)
+      const monthAktivasyonList = monthPaidPayments.filter((p) => isActivationPayment(p.description))
+      const monthAktivasyonUsd = monthAktivasyonList.reduce((s, p) => s + (Number(p.amount) || 0), 0)
+
+      monthlyReport.push({
+        month: monthKey,
+        label: monthLabel,
+        gelir: Math.round(monthGelir * 100) / 100,
+        gider: Math.round((monthGider + monthTokenCost) * 100) / 100,
+        net: Math.round((monthGelir - monthGider - monthTokenCost) * 100) / 100,
+        aktivasyonUsd: Math.round(monthAktivasyonUsd * 100) / 100,
+        aktivasyonAdet: monthAktivasyonList.length,
+      })
+    }
+
     return NextResponse.json({
       gelir: {
         toplam: Math.round(totalGelir * 100) / 100,
         demo: Math.round(demoGelirleri * 100) / 100,
         abonelik: Math.round(abonelikGelirleri * 100) / 100,
+        aktivasyonUsd: Math.round(aktivasyonGeliriUsd * 100) / 100,
+        aktivasyonAdet: aktivasyonKayitAdedi,
         tenantBazli: Object.values(tenantGelir)
           .map((t) => ({ ...t, total: Math.round(t.total * 100) / 100 }))
           .sort((a, b) => b.total - a.total),
@@ -209,6 +258,7 @@ export async function GET() {
         },
       },
       dailyData,
+      monthlyReport,
       pendingCount: payments.filter((p) => p.status === "pending").length,
     })
   } catch (e) {
