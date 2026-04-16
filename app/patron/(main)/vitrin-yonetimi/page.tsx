@@ -23,6 +23,10 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronRight,
+  Plus,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react"
 
 // ==================== TYPES ====================
@@ -60,6 +64,14 @@ interface TenantSlotResponse {
   slots: SlotData[]
 }
 
+interface ReferenceClub {
+  id: string
+  name: string
+  city: string
+  sport: string
+  order: number
+}
+
 const SLOT_LABELS: Record<string, { label: string; description: string }> = {
   hero: { label: "Hero Banner", description: "Ana sayfa ust kisim — baslik, aciklama, gorsel" },
   program: { label: "Program / Ders", description: "Ders programi ve antrenman takvimi" },
@@ -84,6 +96,11 @@ export default function VitrinYonetimiPage() {
   const [expandedSlot, setExpandedSlot] = useState<string | null>(null)
   const [editContent, setEditContent] = useState<string>("")
   const [saving, setSaving] = useState<string | null>(null)
+  const [syncingReference, setSyncingReference] = useState(false)
+  const [loadingReference, setLoadingReference] = useState(false)
+  const [referenceClubs, setReferenceClubs] = useState<ReferenceClub[]>([])
+  const [newClub, setNewClub] = useState({ name: "", city: "", sport: "" })
+  const [referenceSyncedAt, setReferenceSyncedAt] = useState<string | null>(null)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
   // Fetch tenants
@@ -112,9 +129,65 @@ export default function VitrinYonetimiPage() {
     }
   }, [])
 
+  const fetchReferenceClubs = useCallback(async (tenantId: string) => {
+    setLoadingReference(true)
+    try {
+      const res = await fetch(`/api/vitrin/reference-clubs?tenant_id=${tenantId}`)
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(typeof json?.error === "string" ? json.error : "Referans kulup verisi alinamadi")
+      }
+      setReferenceClubs(Array.isArray(json.clubs) ? json.clubs : [])
+      setReferenceSyncedAt(typeof json.syncedAt === "string" ? json.syncedAt : null)
+    } catch (error) {
+      setReferenceClubs([])
+      setReferenceSyncedAt(null)
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Referans kulup verisi alinamadi",
+      })
+    } finally {
+      setLoadingReference(false)
+    }
+  }, [])
+
+  const syncReferenceClubs = useCallback(
+    async (tenantId: string, clubs: ReferenceClub[]) => {
+      setSyncingReference(true)
+      try {
+        const res = await fetch("/api/vitrin/reference-clubs", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tenant_id: tenantId, clubs }),
+        })
+        const json = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          throw new Error(typeof json?.error === "string" ? json.error : "Vitrin API senkronu basarisiz")
+        }
+        setReferenceClubs(Array.isArray(json.clubs) ? json.clubs : clubs)
+        setReferenceSyncedAt(typeof json.syncedAt === "string" ? json.syncedAt : null)
+        setMessage({ type: "success", text: "Referans kulupler vitrin API ile senkronize edildi" })
+      } catch (error) {
+        setMessage({
+          type: "error",
+          text: error instanceof Error ? error.message : "Vitrin API senkronu basarisiz",
+        })
+      } finally {
+        setSyncingReference(false)
+      }
+    },
+    []
+  )
+
   useEffect(() => {
-    if (selectedTenant) fetchSlots(selectedTenant)
-  }, [selectedTenant, fetchSlots])
+    if (!selectedTenant) {
+      setReferenceClubs([])
+      setReferenceSyncedAt(null)
+      return
+    }
+    fetchSlots(selectedTenant)
+    fetchReferenceClubs(selectedTenant)
+  }, [selectedTenant, fetchSlots, fetchReferenceClubs])
 
   // Toggle slot active/inactive
   const handleToggleSlot = async (slotCode: string, currentActive: boolean) => {
@@ -170,6 +243,45 @@ export default function VitrinYonetimiPage() {
     } finally {
       setSaving(null)
     }
+  }
+
+  const handleAddReferenceClub = () => {
+    const name = newClub.name.trim()
+    if (!name) {
+      setMessage({ type: "error", text: "Kulup adi zorunludur" })
+      return
+    }
+    const nextClub: ReferenceClub = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      name,
+      city: newClub.city.trim(),
+      sport: newClub.sport.trim(),
+      order: referenceClubs.length + 1,
+    }
+    setReferenceClubs((prev) => [...prev, nextClub])
+    setNewClub({ name: "", city: "", sport: "" })
+  }
+
+  const handleDeleteReferenceClub = (clubId: string) => {
+    setReferenceClubs((prev) =>
+      prev
+        .filter((club) => club.id !== clubId)
+        .map((club, index) => ({ ...club, order: index + 1 }))
+    )
+  }
+
+  const moveReferenceClub = (clubId: string, direction: "up" | "down") => {
+    setReferenceClubs((prev) => {
+      const index = prev.findIndex((club) => club.id === clubId)
+      if (index < 0) return prev
+      const targetIndex = direction === "up" ? index - 1 : index + 1
+      if (targetIndex < 0 || targetIndex >= prev.length) return prev
+      const next = [...prev]
+      const current = next[index]
+      next[index] = next[targetIndex]
+      next[targetIndex] = current
+      return next.map((club, idx) => ({ ...club, order: idx + 1 }))
+    })
   }
 
   const activeSlotCount = slotData?.slots?.filter((s) => s.is_active).length ?? 0
@@ -280,6 +392,9 @@ export default function VitrinYonetimiPage() {
                 <TabsList className="bg-[#0f3460]/20 border border-[#0f3460]/40">
                   <TabsTrigger value="slots" className="data-[state=active]:bg-[#00d4ff]/20 data-[state=active]:text-[#00d4ff]">
                     Slotlar ({totalSlotCount})
+                  </TabsTrigger>
+                  <TabsTrigger value="referans" className="data-[state=active]:bg-[#00d4ff]/20 data-[state=active]:text-[#00d4ff]">
+                    Referans Kulupler ({referenceClubs.length})
                   </TabsTrigger>
                   <TabsTrigger value="sablon" className="data-[state=active]:bg-[#00d4ff]/20 data-[state=active]:text-[#00d4ff]">
                     Sablon Bilgisi
@@ -401,6 +516,124 @@ export default function VitrinYonetimiPage() {
                             })}
                           </TableBody>
                         </Table>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="referans" className="mt-4">
+                  <Card className="border-[#2a3650] bg-[#0a0e17]/90">
+                    <CardHeader>
+                      <CardTitle className="text-[#e2e8f0] text-sm">Referans Spor Kulupleri</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid md:grid-cols-4 gap-2">
+                        <input
+                          value={newClub.name}
+                          onChange={(e) => setNewClub((prev) => ({ ...prev, name: e.target.value }))}
+                          placeholder="Kulup adi"
+                          className="rounded-md border border-[#2a3650] bg-[#0a0e17] px-3 py-2 text-sm text-[#e2e8f0] md:col-span-2"
+                        />
+                        <input
+                          value={newClub.city}
+                          onChange={(e) => setNewClub((prev) => ({ ...prev, city: e.target.value }))}
+                          placeholder="Sehir"
+                          className="rounded-md border border-[#2a3650] bg-[#0a0e17] px-3 py-2 text-sm text-[#e2e8f0]"
+                        />
+                        <input
+                          value={newClub.sport}
+                          onChange={(e) => setNewClub((prev) => ({ ...prev, sport: e.target.value }))}
+                          placeholder="Brans"
+                          className="rounded-md border border-[#2a3650] bg-[#0a0e17] px-3 py-2 text-sm text-[#e2e8f0]"
+                        />
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          onClick={handleAddReferenceClub}
+                          className="bg-[#22c55e]/20 text-[#22c55e] border border-[#22c55e]/40 hover:bg-[#22c55e]/30"
+                        >
+                          <Plus className="w-3.5 h-3.5 mr-1" />
+                          Ekle
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={!selectedTenant || syncingReference}
+                          onClick={() => selectedTenant && syncReferenceClubs(selectedTenant, referenceClubs)}
+                          className="border-[#00d4ff]/40 text-[#00d4ff] hover:bg-[#00d4ff]/20"
+                        >
+                          {syncingReference ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 mr-1 animate-spin" /> Senkronize ediliyor...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="w-3.5 h-3.5 mr-1" /> Vitrin API ile senkronize et
+                            </>
+                          )}
+                        </Button>
+                        {referenceSyncedAt && (
+                          <span className="text-xs text-[#8892a8] self-center">
+                            Son senkron: {new Date(referenceSyncedAt).toLocaleString("tr-TR")}
+                          </span>
+                        )}
+                      </div>
+
+                      {loadingReference ? (
+                        <p className="text-sm text-[#8892a8]">Referans listesi yukleniyor...</p>
+                      ) : referenceClubs.length === 0 ? (
+                        <p className="text-sm text-[#8892a8]">Henuz referans kulup eklenmedi.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {referenceClubs
+                            .slice()
+                            .sort((a, b) => a.order - b.order)
+                            .map((club, index) => (
+                              <div
+                                key={club.id}
+                                className="flex items-center justify-between gap-2 rounded-lg border border-[#2a3650] bg-[#0a0e17]/60 p-3"
+                              >
+                                <div>
+                                  <p className="text-sm text-[#e2e8f0] font-medium">
+                                    {index + 1}. {club.name}
+                                  </p>
+                                  <p className="text-xs text-[#8892a8]">
+                                    {club.city || "Sehir belirtilmedi"} · {club.sport || "Brans belirtilmedi"}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0 text-[#8892a8]"
+                                    onClick={() => moveReferenceClub(club.id, "up")}
+                                    disabled={index === 0}
+                                  >
+                                    <ArrowUp className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0 text-[#8892a8]"
+                                    onClick={() => moveReferenceClub(club.id, "down")}
+                                    disabled={index === referenceClubs.length - 1}
+                                  >
+                                    <ArrowDown className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0 text-[#ef4444] hover:bg-[#ef4444]/10"
+                                    onClick={() => handleDeleteReferenceClub(club.id)}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
                       )}
                     </CardContent>
                   </Card>
