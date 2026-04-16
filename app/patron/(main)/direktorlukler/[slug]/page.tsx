@@ -1,6 +1,6 @@
 "use client"
 
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { getDirectorateBySlug } from "@/lib/direktorlukler/config"
@@ -18,7 +18,6 @@ interface OutputRow {
 
 export default function DirektorlukSlugPage() {
   const params = useParams()
-  const router = useRouter()
   const slug = typeof params.slug === "string" ? params.slug : ""
   const directorate = getDirectorateBySlug(slug)
   const [outputs, setOutputs] = useState<OutputRow[]>([])
