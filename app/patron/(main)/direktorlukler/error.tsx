@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
@@ -11,10 +10,6 @@ export default function DirektorluklerError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  useEffect(() => {
-    console.error("Direktörlükler hata:", error.message)
-  }, [error])
-
   return (
     <div className="rounded-xl border border-[#e94560]/40 bg-[#e94560]/5 p-6 md:p-8 text-center space-y-4">
       <h3 className="text-lg font-semibold text-[#e2e8f0]">Bir hata oluştu</h3>

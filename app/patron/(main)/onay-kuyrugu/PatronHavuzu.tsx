@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism"
-import { Eye, Check, X, Rocket, Copy } from "lucide-react"
+import { Eye, Check, X, Copy } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import ApproveModal from "./ApproveModal"
 import RejectModal from "./RejectModal"
@@ -93,10 +93,10 @@ function extractContent(item: PatronCommand | DemoRequest): {
 }
 
 export default function PatronHavuzu() {
-  const router = useRouter()
   const [patronCommands, setPatronCommands] = useState<PatronCommand[]>([])
   const [demoRequests, setDemoRequests] = useState<DemoRequest[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [selectedItem, setSelectedItem] = useState<PatronCommand | DemoRequest | null>(null)
   const [previewTab, setPreviewTab] = useState<"onizleme" | "kod" | "ham">("onizleme")
   const [updating, setUpdating] = useState<string | null>(null)
@@ -113,13 +113,19 @@ export default function PatronHavuzu() {
 
   const fetchData = async () => {
     setLoading(true)
+    setLoadError(null)
     try {
       const res = await fetch("/api/patron-havuzu")
       const data = await res.json().catch(() => ({}))
-      if (res.ok) {
-        setPatronCommands(data.patronCommands ?? [])
-        setDemoRequests(data.demoRequests ?? [])
+      if (!res.ok) {
+        throw new Error(typeof data?.error === "string" ? data.error : "Onay kuyrugu verileri alinamadi")
       }
+      setPatronCommands(data.patronCommands ?? [])
+      setDemoRequests(data.demoRequests ?? [])
+    } catch (error) {
+      setPatronCommands([])
+      setDemoRequests([])
+      setLoadError(error instanceof Error ? error.message : "Onay kuyrugu verileri alinamadi")
     } finally {
       setLoading(false)
     }
@@ -248,6 +254,12 @@ export default function PatronHavuzu() {
           </TabsTrigger>
         </TabsList>
 
+        {loadError && (
+          <div className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+            Veri yuklenemedi: {loadError}
+          </div>
+        )}
+
         <div className="flex gap-4 mt-4 min-h-[400px]">
           {/* Sol: Kart listesi */}
           <div className={`overflow-y-auto ${selectedItem ? "w-1/2 lg:w-2/5" : "w-full"} space-y-2`}>
@@ -353,7 +365,16 @@ export default function PatronHavuzu() {
               <div className="flex-1 overflow-auto p-3">
                 {previewTab === "onizleme" && content && (
                   <div className="space-y-3">
-                    {content.type === "image" && <img src={content.value} alt="Önizleme" className="max-w-full rounded border border-[#0f3460]/40" />}
+                    {content.type === "image" && (
+                      <Image
+                        src={content.value}
+                        alt="Onizleme"
+                        width={1024}
+                        height={640}
+                        unoptimized
+                        className="max-w-full h-auto rounded border border-[#0f3460]/40"
+                      />
+                    )}
                     {content.type === "text" && <pre className="text-sm text-[#e2e8f0] whitespace-pre-wrap font-sans">{content.value}</pre>}
                     {content.type === "code" && (
                       <SyntaxHighlighter language="javascript" style={oneDark} customStyle={{ margin: 0, borderRadius: 8 }} showLineNumbers>

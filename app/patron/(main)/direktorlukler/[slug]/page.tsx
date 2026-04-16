@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { getDirectorateBySlug } from "@/lib/direktorlukler/config"
 import KomutPanel from "../KomutPanel"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 
 interface OutputRow {
@@ -22,16 +22,30 @@ export default function DirektorlukSlugPage() {
   const directorate = getDirectorateBySlug(slug)
   const [outputs, setOutputs] = useState<OutputRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
-  useEffect(() => {
+  const loadOutputs = useCallback(async () => {
     if (!slug) return
     setLoading(true)
-    fetch(`/api/motor?directorate_slug=${encodeURIComponent(slug)}`)
-      .then((r) => r.json())
-      .then((data) => setOutputs(data.data ?? []))
-      .catch(() => setOutputs([]))
-      .finally(() => setLoading(false))
+    setLoadError(null)
+    try {
+      const response = await fetch(`/api/motor?directorate_slug=${encodeURIComponent(slug)}`)
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        throw new Error(typeof payload?.error === "string" ? payload.error : "Gorev gecmisi alinamadi")
+      }
+      setOutputs(Array.isArray(payload?.data) ? payload.data : [])
+    } catch (error) {
+      setOutputs([])
+      setLoadError(error instanceof Error ? error.message : "Gorev gecmisi alinamadi")
+    } finally {
+      setLoading(false)
+    }
   }, [slug])
+
+  useEffect(() => {
+    loadOutputs()
+  }, [loadOutputs])
 
   if (!directorate) {
     return (
@@ -80,10 +94,7 @@ export default function DirektorlukSlugPage() {
       <KomutPanel
         directorateSlug={slug}
         onSuccess={() => {
-          fetch(`/api/motor?directorate_slug=${encodeURIComponent(slug)}`)
-            .then((r) => r.json())
-            .then((data) => setOutputs(data.data ?? []))
-            .catch(() => {})
+          loadOutputs()
         }}
       />
 
@@ -94,6 +105,10 @@ export default function DirektorlukSlugPage() {
         <div className="divide-y divide-white/10 max-h-[400px] overflow-y-auto">
           {loading ? (
             <div className="p-4 text-sm text-[#8892a8]">Yükleniyor…</div>
+          ) : loadError ? (
+            <div className="p-4 text-sm text-[#fca5a5]">
+              Gorev gecmisi yuklenemedi: {loadError}
+            </div>
           ) : outputs.length === 0 ? (
             <div className="p-4 text-sm text-[#8892a8]">Henüz görev yok.</div>
           ) : (

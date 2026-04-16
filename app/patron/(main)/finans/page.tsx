@@ -113,16 +113,41 @@ export default function KasaDashboard() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/kasa/summary").then((r) => r.ok ? r.json() : null),
-      fetch("/api/kasa/token-costs").then((r) => r.ok ? r.json() : null),
-    ])
-      .then(([s, t]) => {
-        setSummary(s)
-        setTokens(t)
-      })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false))
+    const fetchFinanceData = async () => {
+      try {
+        const [summaryRes, tokenRes] = await Promise.all([
+          fetch("/api/kasa/summary"),
+          fetch("/api/kasa/token-costs"),
+        ])
+
+        const summaryPayload = await summaryRes.json().catch(() => ({}))
+        const tokenPayload = await tokenRes.json().catch(() => ({}))
+
+        if (!summaryRes.ok) {
+          throw new Error(
+            typeof summaryPayload?.error === "string"
+              ? summaryPayload.error
+              : "Kasa ozet verisi yuklenemedi"
+          )
+        }
+        if (!tokenRes.ok) {
+          throw new Error(
+            typeof tokenPayload?.error === "string"
+              ? tokenPayload.error
+              : "Token maliyet verisi yuklenemedi"
+          )
+        }
+
+        setSummary(summaryPayload)
+        setTokens(tokenPayload)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Finans verisi yuklenemedi")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFinanceData()
   }, [])
 
   if (loading) {

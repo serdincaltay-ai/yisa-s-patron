@@ -92,6 +92,7 @@ export default function VitrinYonetimiPage() {
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null)
   const [slotData, setSlotData] = useState<TenantSlotResponse | null>(null)
   const [loadingTenants, setLoadingTenants] = useState(true)
+  const [tenantLoadError, setTenantLoadError] = useState<string | null>(null)
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [expandedSlot, setExpandedSlot] = useState<string | null>(null)
   const [editContent, setEditContent] = useState<string>("")
@@ -105,11 +106,23 @@ export default function VitrinYonetimiPage() {
 
   // Fetch tenants
   useEffect(() => {
-    fetch("/api/patron/tenants")
-      .then((r) => r.json())
-      .then((json) => setTenants(json.tenants ?? []))
-      .catch(() => {})
-      .finally(() => setLoadingTenants(false))
+    const fetchTenants = async () => {
+      setTenantLoadError(null)
+      try {
+        const response = await fetch("/api/patron/tenants")
+        const payload = await response.json().catch(() => ({}))
+        if (!response.ok) {
+          throw new Error(typeof payload?.error === "string" ? payload.error : "Tenant listesi alinamadi")
+        }
+        setTenants(Array.isArray(payload?.tenants) ? payload.tenants : [])
+      } catch (error) {
+        setTenants([])
+        setTenantLoadError(error instanceof Error ? error.message : "Tenant listesi alinamadi")
+      } finally {
+        setLoadingTenants(false)
+      }
+    }
+    fetchTenants()
   }, [])
 
   // Fetch slots for selected tenant
@@ -303,6 +316,11 @@ export default function VitrinYonetimiPage() {
       {message && (
         <div className={`text-sm px-3 py-2 rounded-lg ${message.type === "success" ? "bg-[#22c55e]/10 text-[#22c55e]" : "bg-[#ef4444]/10 text-[#ef4444]"}`}>
           {message.text}
+        </div>
+      )}
+      {tenantLoadError && (
+        <div className="text-sm px-3 py-2 rounded-lg bg-[#ef4444]/10 text-[#ef4444]">
+          Tenant listesi yuklenemedi: {tenantLoadError}
         </div>
       )}
 
