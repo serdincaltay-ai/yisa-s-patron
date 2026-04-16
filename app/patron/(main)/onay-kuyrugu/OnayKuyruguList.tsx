@@ -69,7 +69,7 @@ export default function OnayKuyruguList({ requests }: { requests: DemoRequest[] 
       }
       toast({
         title: "Tenant oluşturuldu",
-        description: subdomain,
+        description: `Aktivasyon ucreti kaydedildi ($${data.activation_fee_usd ?? 3000}) · ${subdomain}`,
         variant: "success",
       })
       setApproveModal(null)

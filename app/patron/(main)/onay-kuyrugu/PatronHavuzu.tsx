@@ -146,7 +146,11 @@ export default function PatronHavuzu() {
           subdomain: data.subdomain ?? "",
         })
       }
-      toast({ title: "Tenant oluşturuldu", description: data.subdomain ?? "", variant: "success" })
+      toast({
+        title: "Tenant oluşturuldu",
+        description: `Aktivasyon ucreti kaydedildi ($${data.activation_fee_usd ?? 3000}) · ${data.subdomain ?? ""}`,
+        variant: "success",
+      })
       setApproveModal(null)
       setSelectedItem(null)
       fetchData()

@@ -78,6 +78,7 @@ export default function ApproveModal({
                 <p><span className="text-[#8892a8]">Gecici Sifre: </span><span className="text-[#e2e8f0]">{credentialPreview.password}</span></p>
               </div>
               <p className="text-[10px] text-[#8892a8]">Demo suresi: 30 gun</p>
+              <p className="text-[10px] text-[#f59e0b]">Onayla birlikte 3000 USD aktivasyon geliri kaydi olusturulur.</p>
             </div>
           )}
         </div>
