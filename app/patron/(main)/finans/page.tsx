@@ -40,6 +40,8 @@ interface KasaSummary {
     toplam: number
     demo: number
     abonelik: number
+    aktivasyonUsd: number
+    aktivasyonAdet: number
     tenantBazli: { tenantId: string; name: string; total: number }[]
   }
   gider: {
@@ -64,6 +66,15 @@ interface KasaSummary {
     }
   }
   dailyData: { date: string; gelir: number; gider: number }[]
+  monthlyReport: {
+    month: string
+    label: string
+    gelir: number
+    gider: number
+    net: number
+    aktivasyonUsd: number
+    aktivasyonAdet: number
+  }[]
   pendingCount: number
 }
 
@@ -102,16 +113,41 @@ export default function KasaDashboard() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/kasa/summary").then((r) => r.ok ? r.json() : null),
-      fetch("/api/kasa/token-costs").then((r) => r.ok ? r.json() : null),
-    ])
-      .then(([s, t]) => {
-        setSummary(s)
-        setTokens(t)
-      })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false))
+    const fetchFinanceData = async () => {
+      try {
+        const [summaryRes, tokenRes] = await Promise.all([
+          fetch("/api/kasa/summary"),
+          fetch("/api/kasa/token-costs"),
+        ])
+
+        const summaryPayload = await summaryRes.json().catch(() => ({}))
+        const tokenPayload = await tokenRes.json().catch(() => ({}))
+
+        if (!summaryRes.ok) {
+          throw new Error(
+            typeof summaryPayload?.error === "string"
+              ? summaryPayload.error
+              : "Kasa ozet verisi yuklenemedi"
+          )
+        }
+        if (!tokenRes.ok) {
+          throw new Error(
+            typeof tokenPayload?.error === "string"
+              ? tokenPayload.error
+              : "Token maliyet verisi yuklenemedi"
+          )
+        }
+
+        setSummary(summaryPayload)
+        setTokens(tokenPayload)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Finans verisi yuklenemedi")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFinanceData()
   }, [])
 
   if (loading) {
@@ -130,9 +166,10 @@ export default function KasaDashboard() {
     )
   }
 
-  const gelir = summary?.gelir ?? { toplam: 0, demo: 0, abonelik: 0, tenantBazli: [] }
+  const gelir = summary?.gelir ?? { toplam: 0, demo: 0, abonelik: 0, aktivasyonUsd: 0, aktivasyonAdet: 0, tenantBazli: [] }
   const gider = summary?.gider ?? { toplam: 0, apiMaliyeti: 0, ajanBazli: [], hosting: { vercel: 0, supabase: 0, toplam: 0 }, toplamIsletme: 0, fixed: { total: 0, upcomingCount: 0, overdueCount: 0, items: [] } }
   const dailyData = summary?.dailyData ?? []
+  const monthlyReport = summary?.monthlyReport ?? []
   const karMarji = gelir.toplam - gider.toplamIsletme
   const karYuzdesi = gelir.toplam > 0 ? Math.round((karMarji / gelir.toplam) * 100) : 0
 
@@ -141,6 +178,7 @@ export default function KasaDashboard() {
     { label: "Toplam Gider", value: formatTL(gider.toplamIsletme), icon: TrendingDown, color: "#ef4444" },
     { label: "Kar Marji", value: formatTL(karMarji), sub: `%${karYuzdesi}`, icon: DollarSign, color: karMarji >= 0 ? "#00d4ff" : "#ef4444" },
     { label: "API Maliyeti", value: formatUSD(gider.apiMaliyeti), icon: Cpu, color: "#f59e0b" },
+    { label: "Aktivasyon Geliri", value: formatUSD(gelir.aktivasyonUsd), sub: `${gelir.aktivasyonAdet} kayit`, icon: CreditCard, color: "#a78bfa" },
   ]
 
   return (
@@ -156,7 +194,7 @@ export default function KasaDashboard() {
       </div>
 
       {/* Top Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {topCards.map((c) => (
           <Card key={c.label} className="border-[#2a3650] bg-[#0a0e17]/90">
             <CardContent className="p-4">
@@ -203,6 +241,61 @@ export default function KasaDashboard() {
                     <Line type="monotone" dataKey="gider" stroke="#ef4444" strokeWidth={2} dot={false} name="Gider" />
                   </LineChart>
                 </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {monthlyReport.length > 0 && (
+            <Card className="border-[#2a3650] bg-[#0a0e17]/90">
+              <CardHeader>
+                <CardTitle className="text-[#e2e8f0] text-sm">Aylik Finans Raporu (Son 6 Ay)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={monthlyReport}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                    <XAxis dataKey="label" stroke="#64748b" fontSize={11} />
+                    <YAxis stroke="#64748b" fontSize={10} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "#0a0e17", border: "1px solid #2a3650", borderRadius: 8, color: "#e2e8f0", fontSize: 12 }}
+                      formatter={(value: number, name: string) => {
+                        if (name === "aktivasyonUsd") return [formatUSD(value), "Aktivasyon (USD)"]
+                        return [formatTL(value), name === "gelir" ? "Gelir" : name === "gider" ? "Gider" : "Net"]
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="gelir" fill="#22c55e" radius={[3, 3, 0, 0]} name="Gelir" />
+                    <Bar dataKey="gider" fill="#ef4444" radius={[3, 3, 0, 0]} name="Gider" />
+                    <Bar dataKey="net" fill="#00d4ff" radius={[3, 3, 0, 0]} name="Net" />
+                  </BarChart>
+                </ResponsiveContainer>
+
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-[#2a3650]">
+                      <TableHead className="text-[#8892a8]">Ay</TableHead>
+                      <TableHead className="text-[#8892a8] text-right">Gelir</TableHead>
+                      <TableHead className="text-[#8892a8] text-right">Gider</TableHead>
+                      <TableHead className="text-[#8892a8] text-right">Net</TableHead>
+                      <TableHead className="text-[#8892a8] text-right">Aktivasyon</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {monthlyReport.map((row) => (
+                      <TableRow key={row.month} className="border-[#2a3650]/60">
+                        <TableCell className="text-[#e2e8f0]">{row.label}</TableCell>
+                        <TableCell className="text-right text-[#22c55e] font-mono">{formatTL(row.gelir)}</TableCell>
+                        <TableCell className="text-right text-[#ef4444] font-mono">{formatTL(row.gider)}</TableCell>
+                        <TableCell className={`text-right font-mono ${row.net >= 0 ? "text-[#00d4ff]" : "text-[#ef4444]"}`}>
+                          {formatTL(row.net)}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-[#a78bfa]">
+                          {formatUSD(row.aktivasyonUsd)} ({row.aktivasyonAdet})
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           )}

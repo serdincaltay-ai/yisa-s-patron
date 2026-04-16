@@ -3,10 +3,15 @@
 import Link from "next/link"
 import { DollarSign, Building2, LayoutTemplate, BookOpen, Store, Bot, ImageIcon, Terminal, ClipboardList, Globe } from "lucide-react"
 import dynamic from "next/dynamic"
+import { DIREKTORLUKLER, type DirectorateConfig } from "@/lib/direktorlukler/config"
 
-const DIRECTORATES = [
+const DIRECTORATE_CODE_ORDER = [
   "CFO", "CTO", "CMO", "CLO", "CPO", "CHRO", "CCO", "CISO", "CDO", "CSO", "CRDO", "CSPO",
 ]
+
+const DIRECTORATES: DirectorateConfig[] = DIRECTORATE_CODE_ORDER
+  .map((code) => DIREKTORLUKLER.find((item) => item.code === code))
+  .filter((item): item is DirectorateConfig => Boolean(item))
 
 const LottieAvatar = dynamic(
   () => import("./LottieAvatar").then((m) => m.LottieAvatar),
@@ -26,11 +31,16 @@ export default function PatronSidebarLeft() {
           12 Direktörlük
         </h3>
         <ul className="space-y-1">
-          {DIRECTORATES.map((key) => (
-            <li key={key}>
-              <span className="block text-sm text-[#e2e8f0]/90 py-1.5 px-2 rounded-md hover:bg-[#0f3460]/30 font-mono">
-                {key}
-              </span>
+          {DIRECTORATES.map((directorate) => (
+            <li key={directorate.code}>
+              <Link
+                href={`/patron/direktorlukler/${directorate.slug}`}
+                className="flex items-center justify-between gap-2 text-sm text-[#e2e8f0]/90 py-1.5 px-2 rounded-md hover:bg-[#0f3460]/30 font-mono transition-colors"
+                title={directorate.name}
+              >
+                <span>{directorate.code}</span>
+                <span className="text-[10px] text-[#8892a8] uppercase">{directorate.shortName}</span>
+              </Link>
             </li>
           ))}
         </ul>

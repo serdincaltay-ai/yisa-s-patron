@@ -8,6 +8,50 @@ import { generateSlug, ensureUniqueSlug } from "@/lib/utils/slug"
 import { sendDemoApprovedEmail } from "@/lib/emails/resend"
 import { insertTenantWithFallback } from "@/lib/supabase/tenant-insert"
 
+const ACTIVATION_FEE_USD = 3000
+
+async function createActivationRevenueRecord(
+  supabase: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+  demoRequestId: string,
+  createdAtIso: string
+): Promise<{ paymentId: string | null; error: string | null }> {
+  const description = `Aktivasyon ucreti ($${ACTIVATION_FEE_USD}) - Demo Talep #${demoRequestId}`
+
+  const { data: payment, error: paymentError } = await supabase
+    .from("payments")
+    .insert({
+      tenant_id: tenantId,
+      amount: ACTIVATION_FEE_USD,
+      status: "onaylandi",
+      description,
+      created_at: createdAtIso,
+    })
+    .select("id")
+    .single()
+
+  if (paymentError) {
+    return { paymentId: null, error: paymentError.message }
+  }
+
+  // cash_register tablosu schema farki gosterebildigi icin best-effort yazim uygulanir.
+  const cashInsert = await supabase.from("cash_register").insert({
+    tenant_id: tenantId,
+    tur: "gelir",
+    tutar: ACTIVATION_FEE_USD,
+    aciklama: description,
+    tarih: createdAtIso,
+  })
+  if (cashInsert.error) {
+    log.error("cash_register aktivasyon kaydi eklenemedi", new Error(cashInsert.error.message), {
+      tenant_id: tenantId,
+      demo_request_id: demoRequestId,
+    })
+  }
+
+  return { paymentId: (payment?.id as string | undefined) ?? null, error: null }
+}
+
 /**
  * POST: Demo talebini onayla + tenants tablosuna kayıt oluştur + Supabase Auth kullanıcı oluştur.
  * GOREV #14: Telefon = Kullanıcı Adı, Son 4 Hane = Şifre Otomasyonu
@@ -194,13 +238,36 @@ export async function POST(
       throw new Error(utError.message || "Kullanıcı-tenant bağlantısı oluşturulamadı. Talep beklemeye alındı.")
     }
 
-    // 5. demo_requests tablosunu demo bilgileriyle güncelle
+    // 5. Aktivasyon ucreti kaydi (3000 USD)
+    const activationRecord = await createActivationRevenueRecord(
+      adminClient,
+      tenantId,
+      id,
+      now.toISOString()
+    )
+    if (activationRecord.error) {
+      log.error("Aktivasyon ucreti kaydedilemedi, rollback uygulanacak", new Error(activationRecord.error), {
+        tenant_id: tenantId,
+        demo_request_id: id,
+      })
+      await adminClient.from("user_tenants").delete().eq("user_id", demoUserId).eq("tenant_id", tenantId)
+      await adminClient.auth.admin.deleteUser(demoUserId)
+      await supabase.from("tenants").delete().eq("id", tenantId)
+      await supabase.from("demo_requests").update({ status: "new" }).eq("id", id)
+      throw new Error("Aktivasyon ucreti kaydi olusturulamadi. Talep beklemeye alindi.")
+    }
+
+    // 6. demo_requests tablosunu demo + odeme bilgileriyle güncelle
     const { error: demoUpdateError } = await supabase
       .from("demo_requests")
       .update({
         demo_user_id: demoUserId,
         demo_expires_at: demoExpiresAt,
         demo_started_at: now.toISOString(),
+        payment_status: "paid",
+        payment_amount: ACTIVATION_FEE_USD,
+        payment_at: now.toISOString(),
+        payment_notes: "Onay aninda otomatik aktivasyon ucreti kaydi olusturuldu",
       })
       .eq("id", id)
 
@@ -208,7 +275,7 @@ export async function POST(
       log.error("Failed to update demo_requests with demo info", new Error(demoUpdateError.message), { id, demoUserId })
     }
 
-    // 6. Email ile bilgilendirme gönder
+    // 7. Email ile bilgilendirme gönder
     const subdomain = `${uniqueSlug}.yisa-s.com`
     if (email) {
       sendDemoApprovedEmail(email, firmaAdi, uniqueSlug, demoUsername, demoPassword, demoExpiresAt).catch((err) => {
@@ -232,6 +299,8 @@ export async function POST(
       slug: uniqueSlug,
       subdomain,
       tenant_id: tenantId,
+      activation_payment_id: activationRecord.paymentId,
+      activation_fee_usd: ACTIVATION_FEE_USD,
       demo_user_id: demoUserId,
       credentials: {
         username: demoUsername,
