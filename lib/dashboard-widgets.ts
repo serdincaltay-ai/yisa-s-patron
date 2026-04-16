@@ -10,7 +10,7 @@ export const WIDGET_LABELS: Record<WidgetId, string> = {
   token: "Token / Maliyet",
   robotStatus: "Robot Durum",
   onaySayisi: "Onay Sayısı",
-  gorevler: "Başlangıç Görevleri",
+  gorevler: "Görevler",
   apiMaliyet: "API Maliyet",
 }
 

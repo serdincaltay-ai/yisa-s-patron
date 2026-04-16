@@ -10,7 +10,6 @@ import {
   User,
   Users,
   RefreshCw,
-  ChevronDown,
 } from "lucide-react"
 
 type TalepType = "franchise" | "veli" | "personel" | "diger"
@@ -37,19 +36,30 @@ const TYPE_LABELS: Record<TalepType, { label: string; icon: React.ElementType; c
 export default function TaleplerList() {
   const [talepler, setTalepler] = useState<TalepItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [typeFilter, setTypeFilter] = useState<TalepType | "all">("all")
   const [statusFilter, setStatusFilter] = useState<TalepStatus | "all">("all")
 
   const fetchTalepler = useCallback(async () => {
     setLoading(true)
+    setErrorMessage(null)
     try {
       const res = await fetch("/api/talepler")
-      if (res.ok) {
-        const data = await res.json()
-        setTalepler(Array.isArray(data.items) ? data.items : [])
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        if (res.status === 401) {
+          setErrorMessage("Oturum doğrulaması gerekli. Lütfen patron hesabı ile tekrar giriş yapın.")
+        } else {
+          const detail = typeof data?.error === "string" ? data.error : `HTTP ${res.status}`
+          setErrorMessage(`Talepler yüklenemedi: ${detail}`)
+        }
+        setTalepler([])
+        return
       }
+      setTalepler(Array.isArray(data.items) ? data.items : [])
     } catch {
-      // API henüz mevcut olmayabilir
+      setErrorMessage("Talepler servisine ulaşılamadı. Lütfen bağlantınızı kontrol edip tekrar deneyin.")
+      setTalepler([])
     } finally {
       setLoading(false)
     }
@@ -164,6 +174,11 @@ export default function TaleplerList() {
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#00d4ff] border-t-transparent" />
+        </div>
+      ) : errorMessage ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-5">
+          <p className="text-sm font-medium text-red-300">Talep listesi yüklenemedi.</p>
+          <p className="text-xs text-red-200/80 mt-1">{errorMessage}</p>
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-[#0f3460]/40 bg-[#0a0a1a]/80 p-8 text-center">

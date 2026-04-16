@@ -1,14 +1,22 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getWidgetPrefs } from "@/lib/dashboard-widgets"
+import { getWidgetPrefs, WIDGET_LABELS } from "@/lib/dashboard-widgets"
 import TokenMaliyetWidget from "./TokenMaliyetWidget"
+import RobotStatusWidget from "./RobotStatusWidget"
+import OnaySayisiWidget from "./OnaySayisiWidget"
+import GorevlerWidget from "./GorevlerWidget"
+import ApiMaliyetWidget from "./ApiMaliyetWidget"
 
 const WIDGET_COMPONENTS: Record<string, React.ComponentType> = {
   token: TokenMaliyetWidget,
+  robotStatus: RobotStatusWidget,
+  onaySayisi: OnaySayisiWidget,
+  gorevler: GorevlerWidget,
+  apiMaliyet: ApiMaliyetWidget,
 }
 
-function PlaceholderWidget({ id, label }: { id: string; label: string }) {
+function PlaceholderWidget({ label }: { label: string }) {
   return (
     <div className="rounded-lg border border-dashed border-[#2a3650] p-4 min-w-[200px] flex items-center justify-center text-[#8892a8] text-xs">
       {label}
@@ -41,13 +49,13 @@ export default function DashboardWidgetStrip() {
       <div className="flex gap-3 overflow-x-auto pb-1">
         {visibleOrdered.map((id) => {
           const Component = WIDGET_COMPONENTS[id]
-          const label = id === "token" ? "Token / Maliyet" : id === "robotStatus" ? "Robot Durum" : id === "onaySayisi" ? "Onay Sayısı" : id === "gorevler" ? "Görevler" : id === "apiMaliyet" ? "API Maliyet" : id
+          const label = WIDGET_LABELS[id as keyof typeof WIDGET_LABELS] ?? id
           return Component ? (
             <div key={id} className="flex-shrink-0 w-72">
               <Component />
             </div>
           ) : (
-            <PlaceholderWidget key={id} id={id} label={label} />
+            <PlaceholderWidget key={id} label={label} />
           )
         })}
       </div>
